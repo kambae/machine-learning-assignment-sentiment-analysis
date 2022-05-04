@@ -11,6 +11,7 @@ def bag_of_words(data):
     tokenised = data["text"].apply(tk.tokenize)
 
     # filter out stopwords and non words - todo: decide on whether we want to filter
+    # todo remove all non words?????
     allowed_words = set(words.words("en")) - set(stopwords.words("english"))
 
     stemmer = PorterStemmer()
