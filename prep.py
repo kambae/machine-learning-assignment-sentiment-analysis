@@ -33,10 +33,8 @@ class BagOfWords():
     def train_prep(self, data):
         text = data["text"]
         y = data["sentiment"].to_numpy()
-
         # clean text
-        data["text"] = data["text"].str.strip().str.lower()
-
+        data["text"] = self.clean(data["text"])
         X = self.vectoriser.fit_transform(text)
 
         if self.k is not None:
@@ -51,9 +49,19 @@ class BagOfWords():
 
     def pred_prep(self, data):
         text = data["text"]
-        data["text"] = data["text"].str.strip().str.lower()
+        data["text"] = self.clean(data["text"])
         return self.vectoriser.transform(text)
 
+    def clean(self, data_text):
+        lowered = data_text.str.strip().str.lower()
+
+        # todo: make optional through parameter
+        stemmer = PorterStemmer()
+        tk = TweetTokenizer()
+        allowed_words = set(words.words("en")) - set(stopwords.words("english"))
+        lowered.apply(lambda x: " ".join([stemmer.stem(i) for i in tk.tokenize(x) if i in allowed_words]))
+
+        return lowered
 
 def output_pred_csv(data_x, pred_y):
     header = ["id", "sentiment"]
