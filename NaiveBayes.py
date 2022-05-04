@@ -11,7 +11,7 @@ if __name__ == "__main__":
     data = pd.read_csv(data_path)
     test_data = pd.read_csv(test_data_path)
 
-    prep = BagOfWords(k=100)
+    prep = BagOfWords(k=100, vectoriser="tfidf")
 
     # todo: currently featursises words that occur in test but not train. This should not occur!
     train_x, test_x, train_y, test_y = train_test_split(*prep.train_prep(data), test_size=0.1)

@@ -14,8 +14,11 @@ output_path = "pred.csv"
 # report can talk about: ngrams, data cleaning, select k best
 class BagOfWords():
 
-    def __init__(self, k=None):
-        self.vectoriser = CountVectorizer(max_features=2000)
+    def __init__(self, k=None, vectoriser="tfidf"):
+        if vectoriser == "count":
+            self.vectoriser = CountVectorizer(max_features=2000)
+        else:
+            self.vectoriser = TfidfVectorizer(max_features=2000)
         self.k = k
 
     def train_prep(self, data):
