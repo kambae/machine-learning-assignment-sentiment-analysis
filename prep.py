@@ -7,6 +7,7 @@ from nltk.stem import *
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 import csv
+from sklearn.feature_selection import SelectKBest, chi2
 
 output_path = "pred.csv"
 
@@ -23,13 +24,36 @@ output_path = "pred.csv"
 #     # tokenised = np.array([[i for i in x if i in allowed_words] for x in tokenised])
 #     return tokenised
 
+class BagOfWords():
 
-def bag_of_words(data):
-    text = data["text"]
-    vectoriser = CountVectorizer()
-    X = vectoriser.fit_transform(text)
-    y = data["sentiment"] if "sentiment" in data.columns else None
-    return X.toarray(), y
+    def __init__(self, k=None):
+        self.vectoriser = CountVectorizer(max_features=2000)
+        self.k = k
+
+    def train_prep(self, data):
+        text = data["text"]
+        y = data["sentiment"].to_numpy()
+
+        # clean text
+        data["text"] = data["text"].str.strip().str.lower()
+
+        X = self.vectoriser.fit_transform(text)
+
+        if self.k is not None:
+            k_best = SelectKBest(chi2, k=self.k)
+            k_best.fit(X.toarray(), y)
+            indicies = k_best.get_support(indices=True)
+            vocabulary = [self.vectoriser.get_feature_names()[i] for i in indicies]
+            self.vectoriser.vocabulary = vocabulary
+            X = self.vectoriser.transform(text)
+
+        return X.toarray(), y
+
+    def pred_prep(self, data):
+        text = data["text"]
+        data["text"] = data["text"].str.strip().str.lower()
+        return self.vectoriser.transform(text)
+
 
 def output_pred_csv(data_x, pred_y):
     header = ["id", "sentiment"]
