@@ -6,6 +6,9 @@ from nltk.corpus import words
 from nltk.stem import *
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
+import csv
+
+output_path = "pred.csv"
 
 # def bag_of_words(data):
 #     tk = TweetTokenizer()
@@ -27,6 +30,15 @@ def bag_of_words(data):
     X = vectoriser.fit_transform(text)
     y = data["sentiment"] if "sentiment" in data.columns else None
     return X.toarray(), y
+
+def output_pred_csv(data_x, pred_y):
+    header = ["id", "sentiment"]
+    with open(output_path, "w", encoding="UTF8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        data = [[data_x.iloc[i]["id"], pred_y[i]] for i in range(0, len(pred_y))]
+        writer.writerows(data)
+
 
 
 if __name__ == "__main__":

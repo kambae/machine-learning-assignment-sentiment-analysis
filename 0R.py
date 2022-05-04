@@ -1,5 +1,5 @@
 from sklearn.dummy import DummyClassifier
-from prep import bag_of_words
+from prep import bag_of_words, output_pred_csv
 import pandas as pd
 
 if __name__ == "__main__":
@@ -15,4 +15,6 @@ if __name__ == "__main__":
     model = DummyClassifier(strategy="most_frequent")
     model.fit(train_x, train_y)
 
-    print(model.predict(test_x))
+    pred_y = model.predict(test_x)
+    # print(pred_y)
+    output_pred_csv(test_data, pred_y)
