@@ -24,6 +24,7 @@ output_path = "pred.csv"
 #     # tokenised = np.array([[i for i in x if i in allowed_words] for x in tokenised])
 #     return tokenised
 
+# report can talk about: ngrams, data cleaning, select k best
 class BagOfWords():
 
     def __init__(self, k=None):
