@@ -11,19 +11,6 @@ from sklearn.feature_selection import SelectKBest, chi2
 
 output_path = "pred.csv"
 
-# def bag_of_words(data):
-#     tk = TweetTokenizer()
-#     tokenised = data["text"].apply(tk.tokenize)
-#
-#     # filter out stopwords and non words - todo: decide on whether we want to filter
-#     # todo remove all non words?????
-#     allowed_words = set(words.words("en")) - set(stopwords.words("english"))
-#
-#     stemmer = PorterStemmer()
-#     tokenised = np.array([[stemmer.stem(i) for i in x if i in allowed_words] for x in tokenised])
-#     # tokenised = np.array([[i for i in x if i in allowed_words] for x in tokenised])
-#     return tokenised
-
 # report can talk about: ngrams, data cleaning, select k best
 class BagOfWords():
 
