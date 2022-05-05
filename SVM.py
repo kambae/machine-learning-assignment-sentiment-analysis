@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     data = undersample_classes(data)
 
-    prep = BagOfWords(k=100, vectoriser="count")
+    prep = BagOfWords(k=1000, vectoriser="count")
     # note: tfidf probably perfoming better in our test due to comment below - the actual pred has a lot of non existent words which will skew tfidf values
 
     train, test = train_test_split(data, test_size=0.1)

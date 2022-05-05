@@ -60,6 +60,13 @@ def undersample_classes(data):
     nmin = data["sentiment"].value_counts().min()
     return data.groupby("sentiment").apply(lambda x: x.sample(nmin)).reset_index(drop=True)
 
+def oversample_classes(data):
+    nmax = data["sentiment"].value_counts().max()
+    lst = [data]
+    for class_index, group in data.groupby("sentiment"):
+        lst.append(group.sample(nmax - len(group), replace=True))
+    return pd.concat(lst)
+
 def output_pred_csv(data_x, pred_y):
     header = ["id", "sentiment"]
     with open(output_path, "w", encoding="UTF8", newline="") as f:
