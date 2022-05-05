@@ -41,7 +41,9 @@ class BagOfWords():
     def pred_prep(self, data):
         text = data["text"]
         data["text"] = self.clean(data["text"])
-        return self.vectoriser.transform(text)
+        y = data["sentiment"] if "sentiment" in data.columns else None
+
+        return self.vectoriser.transform(text).toarray(), y
 
     def clean(self, data_text):
         lowered = data_text.str.strip().str.lower()
