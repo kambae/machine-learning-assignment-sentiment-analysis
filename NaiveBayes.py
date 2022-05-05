@@ -11,9 +11,9 @@ if __name__ == "__main__":
     data = pd.read_csv(data_path)
     test_data = pd.read_csv(test_data_path)
 
-    data = oversample_classes(data)
+    data = undersample_classes(data)
 
-    prep = BagOfWords(k=2000, vectoriser="count")
+    prep = BagOfWords(k=500, vectoriser="count")
     # note: tfidf probably perfoming better in our test due to comment below - the actual pred has a lot of non existent words which will skew tfidf values
     # note: tfidf is returning far more neutrals
 

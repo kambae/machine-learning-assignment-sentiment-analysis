@@ -7,7 +7,8 @@ from nltk.stem import *
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 import csv
-from sklearn.feature_selection import SelectKBest, chi2
+from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_classif
+import re
 
 output_path = "pred.csv"
 
@@ -25,34 +26,44 @@ class BagOfWords():
         text = data["text"]
         y = data["sentiment"].to_numpy()
         # clean text
-        data["text"] = self.clean(data["text"])
+        text = self.clean(text)
         X = self.vectoriser.fit_transform(text)
 
         if self.k is not None:
-            k_best = SelectKBest(chi2, k=self.k)
+            k_best = SelectKBest(f_classif, k=self.k)
             k_best.fit(X.toarray(), y)
             indicies = k_best.get_support(indices=True)
             vocabulary = [self.vectoriser.get_feature_names()[i] for i in indicies]
             self.vectoriser.vocabulary = vocabulary
             X = self.vectoriser.transform(text)
 
+            print(vocabulary)
+
         return X.toarray(), y
 
     def pred_prep(self, data):
         text = data["text"]
-        data["text"] = self.clean(data["text"])
+        text = self.clean(text)
         y = data["sentiment"] if "sentiment" in data.columns else None
 
         return self.vectoriser.transform(text).toarray(), y
 
     def clean(self, data_text):
-        lowered = data_text.str.strip().str.lower()
+        lowered = data_text.str.strip().str.lower().str.strip('"')
 
-        # todo: make optional through parameter
-        stemmer = PorterStemmer()
-        tk = TweetTokenizer()
-        allowed_words = set(words.words("en")) - set(stopwords.words("english"))
-        lowered.apply(lambda x: " ".join([stemmer.stem(i) for i in tk.tokenize(x) if i in allowed_words]))
+        # lowered.apply(lambda x: print(re.match(r'https?://t.co/[a-zA-Z0-9]*\b', x)))
+
+        # lowered = lowered.apply(lambda x: re.sub(r'@(\w{1,15})\b', "USERNAME", x))
+        # lowered = lowered.apply(lambda x: re.sub(r'https?://t.co/[a-zA-Z0-9]*\b', "URL", x))
+        #
+        # lowered = lowered.apply(lambda x: x.replace("#", ""))
+        # lowered = lowered.apply(lambda x: x.replace('"', ""))
+
+        # # todo: make optional through parameter
+        # stemmer = PorterStemmer()
+        # tk = TweetTokenizer()
+        # allowed_words = set(words.words("en")) - set(stopwords.words("english"))
+        # lowered.apply(lambda x: " ".join([stemmer.stem(i) for i in tk.tokenize(x) if i in allowed_words]))
 
         return lowered
 
