@@ -2,7 +2,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
 import pandas as pd
-from prep import BagOfWords, output_pred_csv
+from prep import *
 
 if __name__ == "__main__":
     data_path = "data/Train.csv"
@@ -11,8 +11,11 @@ if __name__ == "__main__":
     data = pd.read_csv(data_path)
     test_data = pd.read_csv(test_data_path)
 
+    data = undersample_classes(data)
+
     prep = BagOfWords(k=100, vectoriser="count")
     # note: tfidf probably perfoming better in our test due to comment below - the actual pred has a lot of non existent words which will skew tfidf values
+    # note: tfidf is returning far more neutrals
 
     train, test = train_test_split(data, test_size=0.1)
     train_x, train_y = prep.train_prep(train)

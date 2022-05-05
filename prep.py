@@ -56,6 +56,10 @@ class BagOfWords():
 
         return lowered
 
+def undersample_classes(data):
+    nmin = data["sentiment"].value_counts().min()
+    return data.groupby("sentiment").apply(lambda x: x.sample(nmin)).reset_index(drop=True)
+
 def output_pred_csv(data_x, pred_y):
     header = ["id", "sentiment"]
     with open(output_path, "w", encoding="UTF8", newline="") as f:
