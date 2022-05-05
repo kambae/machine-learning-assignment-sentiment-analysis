@@ -31,6 +31,7 @@ if __name__ == "__main__":
         accs.append(accuracy_score(test_y, test_pred_y))
 
     print("Accuracy:", accs)
+    print("Average Accuracy", np.mean(accs))
 
     prep = BagOfWords(k=1000, vectoriser="count")
     train_x, train_y = prep.train_prep(data)

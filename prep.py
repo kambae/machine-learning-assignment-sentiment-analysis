@@ -53,9 +53,9 @@ class BagOfWords():
 
         # lowered.apply(lambda x: print(re.match(r'https?://t.co/[a-zA-Z0-9]*\b', x)))
 
-        # lowered = lowered.apply(lambda x: re.sub(r'@(\w{1,15})\b', "USERNAME", x))
-        # lowered = lowered.apply(lambda x: re.sub(r'https?://t.co/[a-zA-Z0-9]*\b', "URL", x))
-        #
+        lowered = lowered.apply(lambda x: re.sub(r'@(\w{1,15})\b', "USERNAME", x))
+        lowered = lowered.apply(lambda x: re.sub(r'https?://t.co/[a-zA-Z0-9]*\b', "URL", x))
+
         # lowered = lowered.apply(lambda x: x.replace("#", ""))
         # lowered = lowered.apply(lambda x: x.replace('"', ""))
 
@@ -94,6 +94,15 @@ if __name__ == "__main__":
 
     data = pd.read_csv(data_path)
     test_data = pd.read_csv(test_data_path)
+
+    bow = BagOfWords()
+    bow.train_prep(data)
+    text_uncleaned = data["text"]
+    text_cleaned = bow.clean(data["text"])
+
+    for i in range(0, len(text_uncleaned)):
+        print(text_uncleaned[i])
+        print(text_cleaned[i])
 
 
 
