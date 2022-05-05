@@ -33,11 +33,11 @@ class BagOfWords():
             k_best = SelectKBest(f_classif, k=self.k)
             k_best.fit(X.toarray(), y)
             indicies = k_best.get_support(indices=True)
-            vocabulary = [self.vectoriser.get_feature_names()[i] for i in indicies]
+            vocabulary = [self.vectoriser.get_feature_names_out()[i] for i in indicies]
             self.vectoriser.vocabulary = vocabulary
             X = self.vectoriser.transform(text)
 
-            print(vocabulary)
+            # print(vocabulary)
 
         return X.toarray(), y
 
