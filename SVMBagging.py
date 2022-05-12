@@ -5,6 +5,7 @@ import pandas as pd
 from prep import *
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.ensemble import BaggingClassifier
+import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
@@ -17,6 +18,8 @@ if __name__ == "__main__":
     data = undersample_classes(data)
 
     accs = []
+    f1s = []
+    conf_matrix = np.zeros((3, 3))
 
     kf = StratifiedKFold(n_splits=10, shuffle=True)
     for train_i, test_i in kf.split(data, data["sentiment"]):
@@ -32,9 +35,14 @@ if __name__ == "__main__":
 
         test_pred_y = model.predict(test_x)
         accs.append(accuracy_score(test_y, test_pred_y))
+        f1s.append(f1_score(test_y, test_pred_y, average="macro"))
+        conf_matrix += confusion_matrix(test_y, test_pred_y, labels=["negative", "neutral", "positive"])
 
     print("Accuracy:", accs)
     print("Average Accuracy", np.mean(accs))
+    print("Average F1", np.mean(f1s))
+    ConfusionMatrixDisplay(conf_matrix, display_labels=["negative", "neutral", "positive"]).plot()
+    plt.show()
 
     prep = BagOfWords(k=1000, vectoriser="count")
     train_x, train_y = prep.train_prep(data)
