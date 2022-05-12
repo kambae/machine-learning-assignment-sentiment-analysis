@@ -20,6 +20,7 @@ if __name__ == "__main__":
     # note: tfidf is returning far more neutrals
 
     accs = []
+    train_accs = []
     f1s = []
     conf_matrix = np.zeros((3, 3))
 
@@ -36,10 +37,12 @@ if __name__ == "__main__":
 
         test_pred_y = model.predict(test_x)
         accs.append(accuracy_score(test_y, test_pred_y))
+        train_accs.append(accuracy_score(train_y, model.predict(train_x)))
         f1s.append(f1_score(test_y, test_pred_y, average="macro"))
         conf_matrix += confusion_matrix(test_y, test_pred_y, labels=["negative", "neutral", "positive"])
 
     print("Accuracy:", accs)
+    print("Training Acc:", np.mean(train_accs))
     print("Average Accuracy", np.mean(accs))
     print("Average F1", np.mean(f1s))
     ConfusionMatrixDisplay(conf_matrix, display_labels=["negative", "neutral", "positive"]).plot()
