@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     accs = []
 
-    kf = KFold(n_splits=10, shuffle=True)
+    kf = StratifiedKFold(n_splits=10, shuffle=True)
     for train_i, test_i in kf.split(data, data["sentiment"]):
         prep = BagOfWords(k=1000, vectoriser="count")
         train = data.iloc[train_i]
