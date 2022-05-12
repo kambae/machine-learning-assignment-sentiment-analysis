@@ -1,9 +1,11 @@
-from sklearn.naive_bayes import MultinomialNB
+from sklearn import svm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
 import pandas as pd
 from prep import *
 from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.ensemble import BaggingClassifier
+
 
 if __name__ == "__main__":
     data_path = "data/Train.csv"
@@ -14,20 +16,18 @@ if __name__ == "__main__":
 
     data = undersample_classes(data)
 
-    # note: tfidf probably perfoming better in our test due to comment below - the actual pred has a lot of non existent words which will skew tfidf values
-    # note: tfidf is returning far more neutrals
-
     accs = []
 
     kf = StratifiedKFold(n_splits=10, shuffle=True)
     for train_i, test_i in kf.split(data, data["sentiment"]):
-        prep = BagOfWords(k=500, vectoriser="count")
+        prep = BagOfWords(k=1000, vectoriser="count")
         train = data.iloc[train_i]
         test = data.iloc[test_i]
         train_x, train_y = prep.train_prep(train)
         test_x, test_y = prep.pred_prep(test)
 
-        model = MultinomialNB()
+        model = BaggingClassifier(base_estimator=svm.LinearSVC(C=0.01), n_estimators=10, max_samples=0.5)
+        # model = svm.LinearSVC(C=0.01)
         model.fit(train_x, train_y)
 
         test_pred_y = model.predict(test_x)
@@ -36,12 +36,11 @@ if __name__ == "__main__":
     print("Accuracy:", accs)
     print("Average Accuracy", np.mean(accs))
 
-    prep = BagOfWords(k=500, vectoriser="count")
+    prep = BagOfWords(k=1000, vectoriser="count")
     train_x, train_y = prep.train_prep(data)
 
-    model = MultinomialNB()
+    model = svm.LinearSVC()
     model.fit(train_x, train_y)
-
 
     pred_x = prep.pred_prep(test_data)[0]
     out_pred_y = model.predict(pred_x)
