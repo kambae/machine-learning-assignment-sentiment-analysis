@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
 import pandas as pd
 from prep import *
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 if __name__ == "__main__":
     data_path = "data/Train.csv"
@@ -19,8 +19,8 @@ if __name__ == "__main__":
 
     accs = []
 
-    kf = KFold(n_splits=10, shuffle=True)
-    for train_i, test_i in kf.split(data):
+    kf = StratifiedKFold(n_splits=10, shuffle=True)
+    for train_i, test_i in kf.split(data, data["sentiment"]):
         prep = BagOfWords(k=500, vectoriser="count")
         train = data.iloc[train_i]
         test = data.iloc[test_i]

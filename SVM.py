@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import *
 import pandas as pd
 from prep import *
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 if __name__ == "__main__":
     data_path = "data/Train.csv"
@@ -17,14 +17,14 @@ if __name__ == "__main__":
     accs = []
 
     kf = KFold(n_splits=10, shuffle=True)
-    for train_i, test_i in kf.split(data):
+    for train_i, test_i in kf.split(data, data["sentiment"]):
         prep = BagOfWords(k=1000, vectoriser="count")
         train = data.iloc[train_i]
         test = data.iloc[test_i]
         train_x, train_y = prep.train_prep(train)
         test_x, test_y = prep.pred_prep(test)
 
-        model = svm.LinearSVC()
+        model = svm.LinearSVC(C=0.01)
         model.fit(train_x, train_y)
 
         test_pred_y = model.predict(test_x)
