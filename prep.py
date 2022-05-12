@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pandas as pd
 from nltk import TweetTokenizer
@@ -11,6 +13,7 @@ from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_
 import re
 
 output_path = "pred.csv"
+
 
 # report can talk about: ngrams, data cleaning, select k best
 class BagOfWords():
@@ -48,7 +51,8 @@ class BagOfWords():
 
         return self.vectoriser.transform(text).toarray(), y
 
-    def clean(self, data_text):
+    @staticmethod
+    def clean(data_text):
         lowered = data_text.str.strip().str.lower().str.strip('"')
 
         # lowered.apply(lambda x: print(re.match(r'https?://t.co/[a-zA-Z0-9]*\b', x)))
@@ -67,16 +71,20 @@ class BagOfWords():
 
         return lowered
 
-def undersample_classes(data):
-    nmin = data["sentiment"].value_counts().min()
-    return data.groupby("sentiment").apply(lambda x: x.sample(nmin)).reset_index(drop=True)
 
-def oversample_classes(data):
-    nmax = data["sentiment"].value_counts().max()
+def undersample_classes(data, min=-math.inf):
+    nmin = max(min, data["sentiment"].value_counts().min())
+    return data.groupby("sentiment").apply(lambda x: x.sample(nmin) if(nmin < len(x)) else x).reset_index(drop=True)
+
+
+def oversample_classes(data, max=math.inf):
+    nmax = min(max, data["sentiment"].value_counts().max())
     lst = [data]
     for class_index, group in data.groupby("sentiment"):
-        lst.append(group.sample(nmax - len(group), replace=True))
-    return pd.concat(lst)
+        if nmax > len(group):
+            lst.append(group.sample(nmax - len(group), replace=True))
+    return pd.concat(lst, ignore_index=True)
+
 
 def output_pred_csv(data_x, pred_y):
     header = ["id", "sentiment"]
@@ -86,6 +94,14 @@ def output_pred_csv(data_x, pred_y):
         data = [[data_x.iloc[i]["id"], pred_y[i]] for i in range(0, len(pred_y))]
         writer.writerows(data)
 
+
+def augment_dataset(data, extra_data):
+    nmax = data["sentiment"].value_counts().max()
+    lst = [data]
+    for class_index, group in data.groupby("sentiment"):
+        if nmax > len(group):
+            lst.append(extra_data[extra_data["sentiment"] == class_index][["id", "text", "sentiment"]].sample(nmax - len(group), replace=True))
+    return pd.concat(lst, ignore_index=True)
 
 
 if __name__ == "__main__":
