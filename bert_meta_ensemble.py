@@ -38,7 +38,7 @@ class TwitterDataset(Dataset):
 
 
 def create_data_loader(df, tokenizer,  batch_size):
-    # df = oversample_classes(df)
+    df = oversample_classes(df)
     dataset = TwitterDataset(df["text"].to_numpy(), df.sentiment.to_numpy(), tokenizer, MAX_LEN)
     return DataLoader(dataset, batch_size=batch_size, num_workers=4, shuffle=True)
 
@@ -56,7 +56,7 @@ class SentimentClassifier(nn.Module):
     def __init__(self, n_classes, bert):
         super(SentimentClassifier, self).__init__()
         self.bert = bert
-        self.dropout = nn.Dropout(p=0.4)
+        self.dropout = nn.Dropout(p=0.7)
         self.fc = nn.Linear(self.bert.config.hidden_size, 3)
 
     def forward(self, input_ids, attention_mask):
@@ -138,7 +138,8 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     bertweet = AutoModel.from_pretrained("vinai/bertweet-base")
-    tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
+
+    tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 
     label_encodings = {"negative": 0, "neutral": 1, "positive": 2}
 
@@ -146,15 +147,25 @@ if __name__ == "__main__":
 
     data = pd.read_csv(data_path)
 
-    data = undersample_classes(data)
-
-    print(len(data))
+    data = undersample_classes(data, 6000)
 
     data["sentiment"] = data["sentiment"].replace(label_encodings)
+
+    datasets = [[], []]
+
+    for class_index, group in data.groupby("sentiment"):
+        x = data[data["sentiment"] == class_index]
+        datasets[0].append(x[:int(len(x) / 2)])
+        datasets[1].append(x[int(len(x) / 2):])
+
+    data = pd.concat(datasets[0], ignore_index=True)
+
+    print(len(data))
 
     K_FOLDS = 10
 
     model = SentimentClassifier(len(label_encodings), bertweet)
+
     model.to(device)
     model.reset_linear_weight()
 
@@ -162,7 +173,7 @@ if __name__ == "__main__":
 
     EPOCH_COUNT = 10
 
-    optimizer = AdamW(model.parameters(), lr=1e-5)
+    optimizer = AdamW(model.parameters(), lr=5e-6)
 
     loss_fn = nn.CrossEntropyLoss().to(device)
     history = []
@@ -199,7 +210,7 @@ if __name__ == "__main__":
             tracker['val_loss'].append(val_loss)
 
             if val_loss > best_val_loss:
-                torch.save(model.state_dict(), f'models/best_model_state_4.bin')
+                torch.save(model.state_dict(), f'models/best_model_state_ensemble_(2).bin')
                 best_val_loss = val_acc
 
         history.append(tracker)

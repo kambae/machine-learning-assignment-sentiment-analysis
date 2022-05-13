@@ -8,7 +8,8 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import StratifiedKFold
 from torch.optim import AdamW
 from prep import *
-from datetime import datetime
+from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
 
 MAX_LEN = 32
 
@@ -38,7 +39,7 @@ class TwitterDataset(Dataset):
 
 
 def create_data_loader(df, tokenizer,  batch_size):
-    df = oversample_classes(df)
+    # df = oversample_classes(df)
     dataset = TwitterDataset(df["text"].to_numpy(), df.sentiment.to_numpy(), tokenizer, MAX_LEN)
     return DataLoader(dataset, batch_size=batch_size, num_workers=4, shuffle=True)
 
@@ -56,7 +57,7 @@ class SentimentClassifier(nn.Module):
     def __init__(self, n_classes, bert):
         super(SentimentClassifier, self).__init__()
         self.bert = bert
-        self.dropout = nn.Dropout(p=0.4)
+        self.dropout = nn.Dropout(p=0.5)
         self.fc = nn.Linear(self.bert.config.hidden_size, 3)
 
     def forward(self, input_ids, attention_mask):
@@ -104,7 +105,7 @@ def train_epoch(model, train_loader, loss_fn, optimizer, scheduler, device, n):
         scheduler.step()
         optimizer.zero_grad()
 
-    return float(correct + curr_correct) / n, np.mean(losses)
+    return float(correct + curr_correct) / n, np.mean(losses),
 
 
 def evaluate(model, test_loader, loss_fn, device, n):
@@ -112,6 +113,8 @@ def evaluate(model, test_loader, loss_fn, device, n):
 
     losses = []
     correct = 0
+    all_preds = np.array([])
+    all_labels = np.array([])
     with torch.no_grad():
         for x in test_loader:
             input_ids = x["input_ids"].to(device)
@@ -122,10 +125,15 @@ def evaluate(model, test_loader, loss_fn, device, n):
             _, preds = torch.max(outputs, dim=1)
             loss = loss_fn(outputs, labels)
 
+            all_preds = np.concatenate((all_preds, preds.cpu()))
+            all_labels = np.concatenate((all_labels, labels.cpu()))
+
             correct += torch.sum(preds == labels)
             losses.append(loss.item())
 
-    return float(correct) / n, np.mean(losses)
+    ConfusionMatrixDisplay.from_predictions(all_labels, all_preds)
+
+    return float(correct) / n, np.mean(losses), f1_score(all_labels, all_preds, average="macro")
 
 
 def init_weights(m):
@@ -138,7 +146,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     bertweet = AutoModel.from_pretrained("vinai/bertweet-base")
-    tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
+    tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base")
 
     label_encodings = {"negative": 0, "neutral": 1, "positive": 2}
 
@@ -146,7 +154,7 @@ if __name__ == "__main__":
 
     data = pd.read_csv(data_path)
 
-    data = undersample_classes(data, 5000)
+    data = undersample_classes(data)
 
     data["sentiment"] = data["sentiment"].replace(label_encodings)
 
@@ -158,9 +166,9 @@ if __name__ == "__main__":
 
     loaders = create_k_split_loaders(data, K_FOLDS, BATCH_SIZE)
 
-    EPOCH_COUNT = 10
+    EPOCH_COUNT = 5
 
-    optimizer = AdamW(model.parameters(), lr=1e-5)
+    optimizer = AdamW(model.parameters(), lr=5e-6)
 
     loss_fn = nn.CrossEntropyLoss().to(device)
     history = []
@@ -173,7 +181,7 @@ if __name__ == "__main__":
         total_steps = len(train_loader) * EPOCH_COUNT
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
-            num_warmup_steps=0,
+            num_warmup_steps=5,
             num_training_steps=total_steps
         )
         tracker = defaultdict(list)
@@ -186,9 +194,11 @@ if __name__ == "__main__":
 
             print(f'Train loss {train_loss} accuracy {train_acc}')
 
-            val_acc, val_loss = evaluate(model, test_loader, loss_fn, device, len(test_loader.dataset))
+            val_acc, val_loss, val_f1_score = evaluate(model, test_loader, loss_fn, device, len(test_loader.dataset))
 
-            print(f'Val   loss {val_loss} accuracy {val_acc}')
+            plt.show()
+
+            print(f'Val   loss {val_loss} accuracy {val_acc} f1 score {val_f1_score}')
             print()
 
             tracker['train_acc'].append(train_acc)
@@ -196,10 +206,16 @@ if __name__ == "__main__":
             tracker['val_acc'].append(val_acc)
             tracker['val_loss'].append(val_loss)
 
-            if val_loss > best_val_loss:
+            if val_loss < best_val_loss:
                 torch.save(model.state_dict(), f'models/best_model_state_4.bin')
                 best_val_loss = val_acc
 
+        tracking_data = pd.DataFrame(tracker)
+        plt.plot(range(0, len(tracker) + 2), (1, *tracking_data["train_loss"]), label="Training Loss")
+        plt.plot(range(0, len(tracker) + 2), (1, *tracking_data["val_loss"]), label="Validation Loss")
+        plt.xlabel("Batch (100s)")
+
+        plt.show()
         history.append(tracker)
 
         for layer in model.children():
